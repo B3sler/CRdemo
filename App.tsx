@@ -11,8 +11,8 @@ import {
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 
 import { useChallenge } from './src/hooks/useChallenge';
-import { computeHmacHex, computeCode, decodeVersion, Version } from './src/utils/hmac';
-import { ChallengePanel } from './src/components/ChallengePanel';
+import { computeHmacHex, computeCode, decodeVersion, generateSerialNumber, Version } from './src/utils/hmac';
+import { ChallengePanel, QrPayload } from './src/components/ChallengePanel';
 import { ResponsePanel } from './src/components/ResponsePanel';
 import { VerifyPanel, AuthStatus } from './src/components/VerifyPanel';
 import { ArrowConnector } from './src/components/ArrowConnector';
@@ -25,9 +25,14 @@ export default function App() {
   const [version, setVersion] = useState<Version>(1);
   const { challenge, timeLeft, newChallenge } = useChallenge(version);
 
+  // Maschinenseriennummer – einmalig generiert, fest an die Maschine gebunden
+  const [serialNumber] = useState<string>(generateSerialNumber);
+
   // Schritt 2 – Mobiles Gerät
   const [secret, setSecret] = useState(DEFAULT_SECRET);
   const [enteredChallenge, setEnteredChallenge] = useState('');
+  const [enteredSerial, setEnteredSerial] = useState('');
+  const [qrScanned, setQrScanned] = useState(false);
 
   // Schritt 3 – Verifikation
   const [responseInput, setResponseInput] = useState('');
@@ -40,8 +45,19 @@ export default function App() {
     const ver = v ?? versionRef.current;
     newChallenge(ver);
     setEnteredChallenge('');
+    setEnteredSerial('');
     setResponseInput('');
     setAuthStatus('idle');
+    setQrScanned(false);
+  }
+
+  function handleQrScan(payload: QrPayload) {
+    setEnteredSerial(payload.s);
+    setEnteredChallenge(payload.c);
+    setQrScanned(true);
+    if (payload.v !== versionRef.current) {
+      setVersion(payload.v);
+    }
   }
 
   function handleVersionChange(v: Version) {
@@ -51,7 +67,7 @@ export default function App() {
 
   function handleVerify() {
     const detectedVersion = decodeVersion(challenge);
-    const hmacHex = computeHmacHex(challenge, secret);
+    const hmacHex = computeHmacHex(challenge, secret, serialNumber);
     const { code: expected } = computeCode(hmacHex, detectedVersion);
     if (responseInput.trim() === expected) {
       setAuthStatus('success');
@@ -83,10 +99,9 @@ export default function App() {
           <View style={styles.protocolBanner}>
             <Text style={styles.protocolBannerText}>
               <Text style={styles.bold}>Ablauf: </Text>
-              Die Maschine wählt eine Protokoll-Version und generiert eine Challenge, in deren
-              Bits 27–24 die Version kodiert ist ①. Der Techniker gibt die Challenge in seine
-              App ein – sie erkennt die Version automatisch und berechnet den passenden
-              Response-Code ②. Diesen Code gibt er an der Maschine ein ③.
+              Die Maschine zeigt ihre Seriennummer und eine zufällige Challenge ①. Der Techniker
+              gibt beides in seine App ein – erst dann wird der maschinenspezifische Response-Code
+              berechnet ②. Diesen Code gibt er am Terminal ein ③.
             </Text>
           </View>
 
@@ -96,21 +111,27 @@ export default function App() {
               challenge={challenge}
               timeLeft={timeLeft}
               version={version}
+              serialNumber={serialNumber}
               onVersionChange={handleVersionChange}
               onNewChallenge={() => handleNewChallenge()}
+              onQrScan={handleQrScan}
             />
 
             <ArrowConnector
               horizontal={isWide}
-              label={isWide ? 'Challenge ablesen' : 'Challenge ablesen & eingeben'}
+              label={isWide ? 'Seriennr. + Challenge ablesen' : 'Seriennr. + Challenge ablesen'}
             />
 
             <ResponsePanel
               currentChallenge={challenge}
               enteredChallenge={enteredChallenge}
-              onChallengeChange={setEnteredChallenge}
+              onChallengeChange={(v) => { setEnteredChallenge(v); setQrScanned(false); }}
+              correctSerial={serialNumber}
+              enteredSerial={enteredSerial}
+              onSerialChange={(v) => { setEnteredSerial(v); setQrScanned(false); }}
               secret={secret}
               onSecretChange={setSecret}
+              qrScanned={qrScanned}
             />
 
             <ArrowConnector
@@ -128,6 +149,7 @@ export default function App() {
               onVerify={handleVerify}
               challenge={challenge}
               secret={secret}
+              serialNumber={serialNumber}
             />
           </View>
 
@@ -150,12 +172,7 @@ const styles = StyleSheet.create({
   inner: { width: '100%', maxWidth: 1400, gap: 16 },
   header: { alignItems: 'center', gap: 6 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text, textAlign: 'center' },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    letterSpacing: 0.8,
-    textAlign: 'center',
-  },
+  headerSubtitle: { fontSize: 12, color: COLORS.textMuted, letterSpacing: 0.8, textAlign: 'center' },
   protocolBanner: {
     backgroundColor: COLORS.bgCardAlt,
     borderRadius: 12,

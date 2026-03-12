@@ -13,6 +13,7 @@ interface Props {
   onVerify: () => void;
   challenge: string;
   secret: string;
+  serialNumber: string;
 }
 
 export function VerifyPanel({
@@ -22,13 +23,14 @@ export function VerifyPanel({
   onVerify,
   challenge,
   secret,
+  serialNumber,
 }: Props) {
   const MONO = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
   const disabled = responseInput.length < 6;
 
   const version = decodeVersion(challenge);
   const vInfo = VERSION_INFO[version];
-  const hmacHex = computeHmacHex(challenge, secret);
+  const hmacHex = computeHmacHex(challenge, secret, serialNumber);
   const { code: expectedCode } = computeCode(hmacHex, version);
 
   const inputComplete = responseInput.length === vInfo.digits;
@@ -59,8 +61,16 @@ export function VerifyPanel({
         <Text style={styles.internalTitle}>Interne Berechnung der Maschine</Text>
 
         <View style={styles.internalRow}>
+          <Text style={styles.internalKey}>Seriennummer</Text>
+          <Text style={[styles.internalVal, { fontFamily: MONO, color: COLORS.primary }]}>{serialNumber}</Text>
+        </View>
+        <View style={styles.internalRow}>
           <Text style={styles.internalKey}>Challenge</Text>
           <Text style={[styles.internalVal, { fontFamily: MONO }]}>{challenge}</Text>
+        </View>
+        <View style={styles.internalRow}>
+          <Text style={styles.internalKey}>Nachricht</Text>
+          <Text style={[styles.internalVal, { fontFamily: MONO, fontSize: 11 }]}>{serialNumber}|{challenge}</Text>
         </View>
         <View style={styles.internalRow}>
           <Text style={styles.internalKey}>Erkannte Version</Text>

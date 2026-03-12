@@ -116,31 +116,31 @@ HMAC-SHA256(challenge, secret)
 
 ## Versions-Kodierung in der Challenge
 
-Die Protokoll-Version ist **in der Challenge-Zahl selbst** versteckt – in den Bits 27–24 (oberes Nibble des dritten Bytes). Für den Betrachter sieht die Zahl wie eine normale 8–9-stellige Dezimalzahl aus.
+Die Protokoll-Version ist **in der Challenge-Zahl selbst** versteckt – in den **Bits 3–0** (unteres Nibble). Die restlichen Bits sind eine vollständig zufällige 8-stellige Dezimalzahl, sodass die führenden Ziffern die Version nicht verraten.
 
 ```
-Bit 31..28 | Bit 27..24 | Bit 23..0
-  (immer 0) |  Version   | 24-bit Zufallsdaten
-             |  0001 = V1 |
-             |  0010 = V2 |
-             |  0011 = V3 |
+Bit 31..4                  | Bit 3..0
+28-bit Zufallsdaten        | Version
+(führende Ziffern: random) | 0001 = V1
+                           | 0010 = V2
+                           | 0011 = V3
 ```
 
-**Beispiel:**
+**Beispiel** (gleiche Zufallsbasis, verschiedene Versionen):
 
-| Version | Binär (28 Bit)               | Dezimal    |
-|---------|------------------------------|------------|
-| V1      | `0001 · 1010 0011 1111 0010 1100 1000` | 27.508.936 |
-| V2      | `0010 · 1010 0011 1111 0010 1100 1000` | 44.286.152 |
-| V3      | `0011 · 1010 0011 1111 0010 1100 1000` | 61.063.368 |
+| Version | Dezimal    | Letztes Nibble (hex) |
+|---------|------------|----------------------|
+| V1      | 83.742.945 | `...1` (0001)        |
+| V2      | 83.742.946 | `...2` (0010)        |
+| V3      | 83.742.947 | `...3` (0011)        |
 
-Die moblie App liest die Version via:
+Die App liest die Version via:
 ```typescript
-const version = (parseInt(challenge, 10) >> 24) & 0x0F;  // → 1, 2 oder 3
+const version = parseInt(challenge, 10) & 0x0F;  // → 1, 2 oder 3
 ```
 
-**Warum diese Methode?**
-Die Version muss zusammen mit der Challenge übertragen werden, damit Maschine und App dieselbe Truncation verwenden. Durch die Bit-Kodierung entfällt ein separater Versions-Kanal – die Challenge ist selbst-beschreibend.
+**Warum untere statt obere Bits?**
+Bei oberen Bits bestimmt die Version den Wertebereich der Zahl (z. B. V1 immer 16–33 Mio., V2 immer 33–50 Mio.), was die Version aus der führenden Dezimalziffer erkennbar macht. Die unteren Bits beeinflussen den Dezimalwert nur minimal – die führenden Ziffern bleiben vollständig zufällig.
 
 ---
 
