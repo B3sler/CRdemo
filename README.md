@@ -8,16 +8,21 @@
 ## Inhaltsverzeichnis
 
 1. [Überblick](#überblick)
-2. [Authentifizierungsprotokoll](#authentifizierungsprotokoll)
-3. [Maschinenseriennummer & Device-Binding](#maschinenseriennummer--device-binding)
-4. [Protokoll-Versionen (V1 / V2 / V3)](#protokoll-versionen)
-5. [Versions-Kodierung in der Challenge](#versions-kodierung-in-der-challenge)
-6. [QR-Code-Workflow](#qr-code-workflow)
-7. [Projektstruktur](#projektstruktur)
-8. [Installation & Start](#installation--start)
-9. [Verfügbare Scripts](#verfügbare-scripts)
-10. [Tech-Stack](#tech-stack)
-11. [Sicherheitsbetrachtung](#sicherheitsbetrachtung)
+2. [App-Struktur & Navigation](#app-struktur--navigation)
+   - [Tab 1 – Welcome](#tab-1--welcome)
+   - [Tab 2 – Auth-Demo](#tab-2--auth-demo)
+   - [Tab 3 – Plattformspezifische Dateien](#tab-3--plattformspezifische-dateien)
+   - [Tab 4 – Gluestack UI](#tab-4--gluestack-ui)
+3. [Authentifizierungsprotokoll](#authentifizierungsprotokoll)
+4. [Maschinenseriennummer & Device-Binding](#maschinenseriennummer--device-binding)
+5. [Protokoll-Versionen (V1 / V2 / V3)](#protokoll-versionen)
+6. [Versions-Kodierung in der Challenge](#versions-kodierung-in-der-challenge)
+7. [QR-Code-Workflow](#qr-code-workflow)
+8. [Projektstruktur](#projektstruktur)
+9. [Installation & Start](#installation--start)
+10. [Verfügbare Scripts](#verfügbare-scripts)
+11. [Tech-Stack](#tech-stack)
+12. [Sicherheitsbetrachtung](#sicherheitsbetrachtung)
 
 ---
 
@@ -25,7 +30,7 @@
 
 Diese App demonstriert interaktiv, wie eine **HMAC-SHA256-basierte Challenge-Response-Authentifizierung** funktioniert. Das Szenario: Ein Wartungstechniker möchte Zugang zu einer Industriemaschine erhalten. Statt eines statischen Passworts läuft ein kryptografisches Einmalcode-Verfahren ab, bei dem nur jemand mit dem richtigen Secret Key einen gültigen Response-Code berechnen kann.
 
-Die Demo ist in **drei Schritten** aufgebaut, die den realen Protokollablauf exakt abbilden:
+Die App ist zugleich eine **React-Native- und Expo-Demo**: Sie zeigt in vier Tabs nicht nur das Authentifizierungsprotokoll, sondern auch Cross-Platform-Konzepte wie plattformspezifische Dateien (Metro Bundler), das Gluestack-UI-Design-System und den grundlegenden React-Native/Expo-Workflow.
 
 ```
 ┌─────────────────────┐        ┌──────────────────────┐        ┌──────────────────────┐
@@ -36,6 +41,111 @@ Die Demo ist in **drei Schritten** aufgebaut, die den realen Protokollablauf exa
    Zufalls-Challenge              per Hand oder QR-Code           berechnen + vergleichen
    Version in Bits 3–0            eingeben → HMAC → Code
 ```
+
+---
+
+## App-Struktur & Navigation
+
+Die App ist in vier Tabs aufgeteilt, die über eine untere Tab-Leiste (`TabBar`) erreichbar sind. Jeder Tab ist ein eigenständiger Screen in `src/screens/`.
+
+```
+App.tsx
+├── AppHeader        (Titel + Untertitel, wechselt je nach aktivem Tab)
+├── WelcomeScreen    (Tab: welcome)
+├── AuthScreen       (Tab: auth)
+├── PlatformScreen   (Tab: platform)
+└── GluestackScreen  (Tab: gluestack)
+    └── TabBar       (Navigation)
+```
+
+---
+
+### Tab 1 – Welcome
+
+**Datei:** `src/screens/WelcomeScreen.tsx`
+
+Einführung in React Native und Expo. Dieser Tab dient als didaktische Einstiegsseite für die Präsentation der Bachelorarbeit:
+
+- **Hero-Banner** mit Stack-Badges (React Native, Expo SDK 54, TypeScript, iOS · Android · Web)
+- **Was ist React Native?** – Erklärung des Frameworks, natives Rendering ohne WebView
+- **Was ist Expo?** – Toolchain, Expo Go, native APIs
+- **Native vs. Web** – Vergleichstabelle der React-Native-Primitiven vs. HTML-Elemente (`<View>` / `<div>`, `<Text>` / `<p>`, `<Image>` / `<img>` etc.)
+- **Kernkonzepte** – StyleSheet, Flexbox, Bridge/JSI, Hot Reload, Metro Bundler, Expo Go (6 Feature-Cards)
+- **Expo Managed Workflow** – 4-stufiger Ablauf (Code schreiben → Expo starten → QR scannen → Build & Deploy)
+- **CTAs** – Direktlinks zu Auth-Demo und Plattform-Tab
+
+---
+
+### Tab 2 – Auth-Demo
+
+**Datei:** `src/screens/AuthScreen.tsx`
+
+Das Herzstück der Bachelorarbeit: interaktive Demo des 3-Schritt-Authentifizierungsprotokolls.
+
+Der Screen läuft responsiv:
+- auf **mobilen Geräten** (iOS, Android): vertikaler Fluss (Column)
+- auf **breitem Web-Viewport** (> Breakpoint): horizontaler Fluss (Row)
+
+**Komponenten:**
+
+| Komponente | Datei | Aufgabe |
+|---|---|---|
+| `ChallengePanel` | `src/components/ChallengePanel.tsx` | Schritt ①: Seriennummer, Challenge-Zahl, Versionsauswahl, Countdown (60 s), QR-Code |
+| `ResponsePanel` | `src/components/ResponsePanel.tsx` | Schritt ②: Eingabe von Seriennummer + Challenge, HMAC-Berechnung Schritt für Schritt, Response-Code |
+| `VerifyPanel` | `src/components/VerifyPanel.tsx` | Schritt ③: Code-Eingabe, interne Verifikation, Erfolg/Fehler-Feedback |
+| `ArrowConnector` | `src/components/ArrowConnector.tsx` | Visueller Pfeil zwischen den Schritten (horizontal oder vertikal) |
+| `StepBadge` | `src/components/StepBadge.tsx` | Nummeriertes Badge (①②③) |
+| `Divider` | `src/components/Divider.tsx` | Trennlinie mit optionalem Label |
+
+**State-Management in AuthScreen:**
+- `version` – aktive Protokoll-Version (1, 2 oder 3)
+- `challenge` + `timeLeft` – aus `useChallenge`-Hook (automatische 60-s-Rotation)
+- `serialNumber` – einmalig generiert beim App-Start via `generateSerialNumber()`
+- `secret` – editierbarer Secret Key (Standardwert aus Theme)
+- `enteredChallenge` / `enteredSerial` – Eingaben des Nutzers in Panel ②
+- `qrScanned` – Flag, ob Daten per QR-Scan befüllt wurden
+- `responseInput` / `authStatus` – Eingabe und Ergebnis der Verifikation in Panel ③
+
+Bei **Fehleingabe** in Panel ③ wird nach 1,2 s automatisch eine neue Challenge generiert.
+
+---
+
+### Tab 3 – Plattformspezifische Dateien
+
+**Datei:** `src/screens/PlatformScreen.tsx`
+
+Erklärt das Metro-Bundler-Feature für plattformspezifische Dateiendungen:
+
+- **Aktuell aktive Plattform-Banner** – zeigt `Platform.OS` live und welche Datei Metro gerade lädt
+- **Live-Demo: PlatformCard** – dieselbe `<PlatformCard />`-Zeile rendert unterschiedlich auf iOS (`PlatformCard.ios.tsx`) und Web (`PlatformCard.web.tsx`)
+- **Priorisierungs-Liste** – zeigt die Reihenfolge der Metro-Auflösung: `.ios.tsx` → `.android.tsx` → `.web.tsx` → `.tsx` (Fallback)
+- **Import-Beispiel** – Code-Block erklärt den transparenten Import ohne if/else
+- **Dateistruktur-Übersicht** – Code-Block der plattformspezifischen Dateien
+- **NativeUIShowcase** – weitere Live-Demo mit plattformspezifischer UI (`NativeUIShowcase.ios.tsx` vs. `NativeUIShowcase.web.tsx`)
+- **Empfehlungen** – wann Plattformdateien sinnvoll sind (Navigation/Gesten, Plattform-APIs, Design-Sprache) vs. wann `Platform.select({})` ausreicht
+
+---
+
+### Tab 4 – Gluestack UI
+
+**Datei:** `src/screens/GluestackScreen.tsx`
+
+Interaktive Showcase aller Gluestack-UI-Komponenten, die in der Auth-Demo eingesetzt werden:
+
+| Abschnitt | Komponenten |
+|---|---|
+| Button | solid / outline / link, verschiedene actions und sizes, disabled |
+| Badge | info / success / warning / error / muted, solid + outline |
+| Alert | info / success / warning / error mit Icon |
+| Avatar | Fallback-Initialen, verschiedene sizes und Farben |
+| Input | outline / rounded / underlined, disabled |
+| Checkbox & Switch | interaktiv, mit Labels |
+| Select / Dropdown | Protokoll-Version wählen, interaktiv |
+| Progress & Spinner | statische Werte, small/large Spinner |
+| Layout | VStack / HStack / Divider mit `space`-Prop |
+| Typography | Heading sizes 2xl–xs, bold / italic / underline / strikeThrough |
+
+Alle Komponenten sind **plattformübergreifend** – sie funktionieren identisch auf iOS, Android und Web.
 
 ---
 
@@ -54,7 +164,7 @@ Die Challenge ist **60 Sekunden** gültig – danach wird automatisch eine neue 
 Der Techniker liest Seriennummer und Challenge vom Display ab (oder scannt den QR-Code). Die App:
 
 1. Liest die Version aus den **Bits 3–0** der Challenge-Zahl
-2. Baut die HMAC-Nachricht: `serial | challenge`
+2. Baut die HMAC-Nachricht: `serial|challenge`
 3. Berechnet `HMAC-SHA256(serial|challenge, secret_key)`
 4. Wendet die versionsabhängige **Truncation** an
 5. Zeigt den fertigen Response-Code an
@@ -188,11 +298,11 @@ const version = parseInt(challenge, 10) & 0x0F;  // → 2
 
 **Beispiel** (gleiche Zufallsbasis, alle drei Versionen):
 
-| Version | Challenge  | Letztes Hex-Nibble | Bits 3–0 |
-|---------|------------|--------------------|----------|
-| V1      | 8337       | `...1`             | 0001     |
-| V2      | 834290     | `...2`             | 0010     |
-| V3      | 83742947   | `...3`             | 0011     |
+| Version | Challenge  | Bits 3–0 |
+|---------|------------|----------|
+| V1      | 8337       | 0001     |
+| V2      | 834290     | 0010     |
+| V3      | 83742947   | 0011     |
 
 **Warum untere statt obere Bits?**
 Bei oberen Bits würde die Version den Wertebereich der Dezimalzahl definieren – V1 läge immer in einem anderen Zahlenbereich als V2, was die Version aus der führenden Ziffer erkennbar machen würde. Die unteren 4 Bits verändern den Dezimalwert nur minimal; die führenden Ziffern bleiben vollständig zufällig.
@@ -222,7 +332,7 @@ In Schritt ① kann die Maschine einen QR-Code anzeigen, der alle für die Respo
 ### Ablauf
 
 1. **Panel ①** – QR-Code aufklappen → Code anzeigen
-2. **Scannen (simuliert)** – Button „📷 QR-Code scannen" drücken
+2. **Scannen (simuliert)** – Button „QR-Code scannen" drücken
 3. **Panel ②** – Seriennummer, Challenge und Version werden **automatisch befüllt**, Response-Code erscheint sofort
 4. **Panel ③** – Response-Code manuell eingeben und verifizieren
 
@@ -234,12 +344,12 @@ Der QR-Code aktualisiert sich automatisch bei jeder neuen Challenge. In einer Pr
 
 ```
 CRdemo/
-├── App.tsx                          # Einstiegspunkt, State-Management, Layout
-├── app.json                         # Expo-Konfiguration
+├── App.tsx                              # Einstiegspunkt: GluestackUIProvider, TabBar-State, Routing
+├── app.json                             # Expo-Konfiguration
 ├── package.json
 ├── tsconfig.json
-├── .eslintrc.js                     # ESLint-Konfiguration
-├── .prettierrc                      # Prettier-Konfiguration
+├── .eslintrc.js
+├── .prettierrc
 ├── assets/
 │   ├── icon.png
 │   ├── splash.png
@@ -247,31 +357,50 @@ CRdemo/
 │   └── adaptive-icon.png
 └── src/
     ├── components/
-    │   ├── ChallengePanel.tsx       # Schritt 1: Seriennummer, Challenge, QR-Code
-    │   ├── ResponsePanel.tsx        # Schritt 2: HMAC-Berechnung Schritt für Schritt
-    │   ├── VerifyPanel.tsx          # Schritt 3: Interne Verifikation
-    │   ├── ArrowConnector.tsx       # Pfeil-Verbinder zwischen den Schritten
-    │   ├── StepBadge.tsx            # Nummeriertes Schritt-Badge (①②③)
-    │   └── Divider.tsx              # Trennlinie mit optionalem Label
+    │   ├── AppHeader.tsx                # Kopfzeile mit Titel + Untertitel (wechselt je Tab)
+    │   ├── TabBar.tsx                   # Untere Tab-Navigation (welcome/auth/platform/gluestack)
+    │   ├── ChallengePanel.tsx           # Schritt ①: Seriennummer, Challenge, QR-Code
+    │   ├── ResponsePanel.tsx            # Schritt ②: Eingabe + HMAC-Berechnung
+    │   ├── VerifyPanel.tsx              # Schritt ③: Interne Verifikation
+    │   ├── ArrowConnector.tsx           # Pfeil-Verbinder zwischen Schritten
+    │   ├── StepBadge.tsx                # Nummeriertes Schritt-Badge (①②③)
+    │   ├── Divider.tsx                  # Trennlinie mit optionalem Label
+    │   ├── PlatformCard.ios.tsx         # iOS-Variante der PlatformCard
+    │   ├── PlatformCard.web.tsx         # Web-Variante der PlatformCard
+    │   ├── NativeUIShowcase.ios.tsx     # iOS-spezifische UI-Controls
+    │   └── NativeUIShowcase.web.tsx     # Web-spezifische UI-Controls
     ├── hooks/
-    │   └── useChallenge.ts          # 60s-Countdown + automatische Challenge-Rotation
+    │   └── useChallenge.ts              # 60-s-Countdown + automatische Challenge-Rotation
+    ├── screens/
+    │   ├── WelcomeScreen.tsx            # Tab 1: React Native & Expo Einführung
+    │   ├── AuthScreen.tsx               # Tab 2: 3-Schritt-Authentifizierungsprotokoll
+    │   ├── PlatformScreen.tsx           # Tab 3: Plattformspezifische Dateien (Metro Bundler)
+    │   └── GluestackScreen.tsx          # Tab 4: Gluestack-UI-Komponentenübersicht
     ├── theme/
-    │   └── index.ts                 # Farben, Konstanten (COLORS, CHALLENGE_TTL, …)
+    │   └── index.ts                     # COLORS, DEFAULT_SECRET, BREAKPOINT, CHALLENGE_TTL
     └── utils/
-        └── hmac.ts                  # Kernlogik: HMAC, Truncation, Versions-Kodierung
+        └── hmac.ts                      # Kernlogik: HMAC, Truncation, Versions-Kodierung
 ```
 
 ### Kernlogik (`src/utils/hmac.ts`)
 
 | Funktion | Beschreibung |
 |---|---|
-| `encodeChallenge(version)` | Generiert versionsgerechte Dezimalzahl, setzt Bits 3–0 auf Version |
+| `encodeChallenge(version)` | Generiert versionsabhängig lange Dezimalzahl, setzt Bits 3–0 auf Version |
 | `decodeVersion(challenge)` | Liest Version aus Bits 3–0: `parseInt(challenge) & 0x0F` |
 | `buildMessage(challenge, serial)` | Erstellt HMAC-Nachricht: `serial\|challenge` |
 | `computeHmacHex(challenge, secret, serial)` | Berechnet HMAC-SHA256, gibt Hex-String zurück |
 | `computeCode(hmacHex, version)` | Versionsabhängige Truncation → Code + Berechnungsschritte |
+| `challengeBitLayout(challenge)` | Trennt Versions-Nibble (Bits 3–0) und Datenbits (31–4) für UI-Anzeige |
 | `generateSerialNumber()` | Erzeugt zufällige Seriennummer: `JB12_xxxx` |
-| `challengeBitLayout(challenge)` | Trennt Versions-Bits (3–0) und Daten-Bits (31–4) für UI-Anzeige |
+
+### Hook (`src/hooks/useChallenge.ts`)
+
+`useChallenge(version)` verwaltet:
+- Den aktuellen Challenge-String (neu generiert via `encodeChallenge`)
+- Den laufenden Countdown (`timeLeft`, 0–60 s)
+- Automatische Neugenerierung wenn `timeLeft === 0`
+- `newChallenge(version?)` – manuelles Auslösen einer neuen Challenge
 
 ---
 
@@ -293,8 +422,11 @@ npm install
 ### Starten
 
 ```bash
-# QR-Code für Expo Go (iOS / Android)
+# QR-Code für Expo Go (iOS / Android) – lokales Netzwerk
 npx expo start
+
+# Tunnel-Modus (auch außerhalb des lokalen Netzwerks nutzbar)
+npx expo start --tunnel
 
 # Direkt im Browser
 npx expo start --web
@@ -312,11 +444,14 @@ npx expo start --ios
 
 | Script | Befehl | Beschreibung |
 |--------|--------|--------------|
-| Start | `npm start` | Startet Metro Bundler |
-| Web | `npm run web` | Öffnet App im Browser |
-| Lint | `npm run lint` | ESLint prüfen |
-| Lint Fix | `npm run lint:fix` | ESLint auto-fix |
-| Format | `npm run format` | Prettier über alle Dateien |
+| Start | `npm start` | Metro Bundler starten |
+| Tunnel | `npm run tunnel` | Start mit Expo Tunnel (ngrok, netzwerkunabhängig) |
+| Web | `npm run web` | App im Browser öffnen |
+| Android | `npm run android` | Android-Emulator starten |
+| iOS | `npm run ios` | iOS-Simulator starten (nur macOS) |
+| Lint | `npm run lint` | ESLint für `src/` und `App.tsx` |
+| Lint Fix | `npm run lint:fix` | ESLint mit Auto-Fix |
+| Format | `npm run format` | Prettier über alle `.ts`/`.tsx`-Dateien |
 
 ---
 
@@ -324,12 +459,15 @@ npx expo start --ios
 
 | Paket | Version | Zweck |
 |-------|---------|-------|
-| [Expo](https://expo.dev) | ~52.0 | React Native Toolchain |
-| [React Native](https://reactnative.dev) | 0.76.x | Cross-Platform UI |
+| [Expo](https://expo.dev) | ~54.0 | React Native Toolchain & Managed Workflow |
+| [React Native](https://reactnative.dev) | 0.81.5 | Cross-Platform native UI |
+| [React](https://react.dev) | 19.1.0 | UI-Library |
 | [TypeScript](https://www.typescriptlang.org) | ^5.3 | Typsicherheit |
 | [crypto-js](https://github.com/brix/crypto-js) | ^4.2 | HMAC-SHA256 Implementierung |
-| [react-native-qrcode-svg](https://github.com/awesomejerry/react-native-qrcode-svg) | ^6.x | QR-Code-Generierung |
-| [@gluestack-ui/themed](https://gluestack.io) | ^1.1 | UI-Komponentenbibliothek |
+| [react-native-qrcode-svg](https://github.com/awesomejerry/react-native-qrcode-svg) | ^6.3 | QR-Code-Generierung |
+| [react-native-svg](https://github.com/software-mansion/react-native-svg) | 15.12.1 | SVG-Rendering (Peer-Dep. von QR-Code) |
+| [@gluestack-ui/themed](https://gluestack.io) | ^1.1 | Universal Design System (React Native + Web) |
+| [react-native-web](https://necolas.github.io/react-native-web) | ^0.21 | React Native → Web-Renderer |
 | [ESLint](https://eslint.org) | ^9 | Linting |
 | [Prettier](https://prettier.io) | ^3 | Code-Formatierung |
 
@@ -349,19 +487,20 @@ npx expo start --ios
 - Sofortige Challenge-Rotation bei Fehleingabe
 - Versionierung ohne separaten Übertragungskanal (in Challenge eingebettet)
 - QR-Code-Workflow für fehlerfreie, schnelle Dateneingabe
+- Schrittweise Visualisierung der HMAC-Berechnung in Panel ②
 
 ### Was in einer Produktionsimplementierung hinzukommen müsste
 
 | Thema | Produktionsmaßnahme |
 |-------|---------------------|
-| **Schlüsselverwaltung** | Secret Key in Secure Enclave / Hardware Security Module (HSM) speichern, nie im Klartext im Dateisystem |
+| **Schlüsselverwaltung** | Secret Key in Secure Enclave / Hardware Security Module (HSM) speichern, nie im Klartext |
 | **Zähler / TOTP** | Kombination mit Zeitstempel (TOTP, RFC 6238) oder monotonem Zähler (HOTP) für stärkere Replay-Prävention |
 | **Brute-Force-Schutz** | Sperrung nach N Fehlversuchen, Rate-Limiting, Alarmmeldung bei wiederholten Fehlversuchen |
 | **Kanalabsicherung** | Challenge-Übertragung via authentifiziertem BLE / NFC statt unverschlüsseltem Display |
-| **Code-Länge** | Mindestens 6 Stellen (V2/V3) für produktive Umgebungen empfohlen – V1 (4-stellig) nur für Demo-Zwecke |
+| **Code-Länge** | Mindestens 6 Stellen (V2/V3) für produktive Umgebungen – V1 (4-stellig) nur für Demo-Zwecke |
 | **Audit-Log** | Protokollierung aller Authentifizierungsversuche mit Zeitstempel, Geräte-ID und Ergebnis |
 | **Zertifikatsbasierte Bindung** | Zusätzliche Absicherung des Secret Keys durch Gerätezertifikat |
 
 ---
 
-*Bachelorarbeit · HMAC-SHA256 nach RFC 2104 · HOTP nach RFC 4226*
+*Bachelorarbeit · HMAC-SHA256 nach RFC 2104 · HOTP nach RFC 4226 · Expo SDK 54 · React Native 0.81*

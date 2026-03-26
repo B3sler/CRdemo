@@ -21,7 +21,7 @@ const HEADER_TITLES: Record<TabId, { title: string; subtitle: string }> = {
     subtitle: '3-Schritt-Protokoll · HMAC-SHA256',
   },
   platform: {
-    title: 'Plattformspezifische Dateien',
+    title: 'Plattformaspezifische Dateien',
     subtitle: '.ios.tsx · .web.tsx · Metro Bundler',
   },
   gluestack: {
