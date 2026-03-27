@@ -12,7 +12,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bgCard} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.screen}>
           {activeTab === 'auth' && <AuthScreen />}

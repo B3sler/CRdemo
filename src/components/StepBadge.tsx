@@ -21,19 +21,19 @@ export function StepBadge({ n, label }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   circle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: COLORS.primary,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.bgDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  num: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  num: { color: '#fff', fontWeight: '800', fontSize: 12 },
   label: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    fontWeight: '600',
+    fontSize: 10,
+    color: COLORS.textHint,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
 });

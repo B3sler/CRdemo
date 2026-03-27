@@ -1,7 +1,8 @@
 /**
  * MachineCard.web.tsx
- * Web-Darstellung: Moderne Karten mit Hover-Tabs, Grid-Layout, Web-Typografie.
- * Wird von Metro automatisch im Browser geladen.
+ * Web-Darstellung: MULTIVAC HMI-inspiriertes Dashboard-Layout.
+ * Dunkle Header-Leiste, strukturierte Datentabellen, Industriecharakter.
+ * Metro lädt diese Datei automatisch im Browser.
  */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
@@ -15,187 +16,288 @@ interface Props {
 }
 
 const SECTIONS = [
-  { id: 'overview' as const, label: 'Übersicht', icon: '🏷️' },
-  { id: 'datasheet' as const, label: 'Datenblatt', icon: '📋' },
-  { id: 'parts' as const, label: 'Ersatzteile', icon: '🔩' },
-  { id: 'maintenance' as const, label: 'Wartung', icon: '🛠️' },
+  { id: 'overview' as const,    label: 'Übersicht',   icon: '▤' },
+  { id: 'datasheet' as const,   label: 'Datenblatt',  icon: '≡' },
+  { id: 'parts' as const,       label: 'Ersatzteile', icon: '⬡' },
+  { id: 'maintenance' as const, label: 'Wartung',     icon: '⚙' },
 ];
 
-function WebRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <View style={styles.webRow}>
-      <Text style={styles.webRowLabel}>{label}</Text>
-      <Text style={[styles.webRowValue, mono && styles.webRowValueMono]}>{value}</Text>
-    </View>
-  );
-}
-
-function WebCard({ title, children }: { title?: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.webCard}>
-      {title && <Text style={styles.webCardTitle}>{title}</Text>}
-      {children}
-    </View>
-  );
-}
-
-const STATUS_CONFIG = {
-  ok: { bg: '#f0fdf4', border: '#86efac', dot: '#22c55e', text: '#15803d' },
-  warning: { bg: '#fffbeb', border: '#fcd34d', dot: '#f59e0b', text: '#92400e' },
-  error: { bg: '#fef2f2', border: '#fca5a5', dot: '#ef4444', text: '#991b1b' },
+const STATUS_CFG = {
+  ok:      { bg: '#E6F9EE', border: '#6ABF99', dot: '#0A6640', text: '#0A6640', label: 'OK' },
+  warning: { bg: '#FEF6EE', border: '#F4B660', dot: '#B54708', text: '#B54708', label: 'Wartung fällig' },
+  error:   { bg: '#FEF3F2', border: '#FDA29B', dot: '#B42318', text: '#B42318', label: 'Fehler' },
 };
 
-export function MachineCard({ machine, activeSection, onSectionChange }: Props) {
-  const sc = STATUS_CONFIG[machine.status];
+// ─── Shared sub-components ────────────────────────────────────────────────────
 
+function DataRow({ label, value, mono, accent }: {
+  label: string; value: string; mono?: boolean; accent?: boolean;
+}) {
   return (
-    <View style={styles.root}>
-
-      {/* Web Tab Bar */}
-      <View style={styles.tabBar}>
-        {SECTIONS.map((s) => (
-          <TouchableOpacity
-            key={s.id}
-            style={[styles.tab, activeSection === s.id && styles.tabActive]}
-            onPress={() => onSectionChange(s.id)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.tabIcon}>{s.icon}</Text>
-            <Text style={[styles.tabLabel, activeSection === s.id && styles.tabLabelActive]}>
-              {s.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Platform badge */}
-      <View style={styles.platformBadge}>
-        <Text style={styles.platformDot}>●</Text>
-        <Text style={styles.platformBadgeText}>MachineCard.web.tsx · Web-Stil</Text>
-      </View>
-
-      {/* Übersicht */}
-      {activeSection === 'overview' && (
-        <View style={styles.sections}>
-          <View style={[styles.statusBanner, { backgroundColor: sc.bg, borderColor: sc.border }]}>
-            <View style={[styles.statusDot, { backgroundColor: sc.dot }]} />
-            <Text style={[styles.statusText, { color: sc.text }]}>{machine.statusText}</Text>
-          </View>
-
-          <View style={styles.gridTwo}>
-            <WebCard title="Gerät">
-              <WebRow label="Modell" value={machine.model} />
-              <WebRow label="Kategorie" value={machine.category} />
-              <WebRow label="Hersteller" value={machine.manufacturer} />
-              <WebRow label="Baujahr" value={String(machine.yearBuilt)} />
-            </WebCard>
-            <WebCard title="Standort & Status">
-              <WebRow label="Ort" value={machine.location} />
-              <WebRow label="Status" value={machine.statusText} />
-              <WebRow label="Seriennr." value={machine.serialNo} mono />
-            </WebCard>
-          </View>
-        </View>
-      )}
-
-      {/* Datenblatt */}
-      {activeSection === 'datasheet' && (
-        <View style={styles.sections}>
-          {/* PDF Button */}
-          <TouchableOpacity style={styles.pdfButton} activeOpacity={0.85}>
-            <Text style={styles.pdfIcon}>📄</Text>
-            <View style={styles.pdfTextWrap}>
-              <Text style={styles.pdfLabel}>{machine.datasheet.pdfLabel}</Text>
-              <Text style={styles.pdfSub}>Datenblatt herunterladen</Text>
-            </View>
-            <Text style={styles.pdfArrow}>↗</Text>
-          </TouchableOpacity>
-
-          <View style={styles.gridTwo}>
-            <WebCard title="Elektrisch / Leistung">
-              <WebRow label="Leistung" value={machine.datasheet.power} />
-              <WebRow label="Spannung" value={machine.datasheet.voltage} />
-              <WebRow label="Schutzklasse" value={machine.datasheet.ipClass} />
-              <WebRow label="Ausstoß" value={machine.datasheet.output} />
-            </WebCard>
-            <WebCard title="Mechanisch">
-              <WebRow label="Gewicht" value={machine.datasheet.weight} />
-              <WebRow label="Abmessungen" value={machine.datasheet.dimensions} />
-            </WebCard>
-          </View>
-        </View>
-      )}
-
-      {/* Ersatzteile */}
-      {activeSection === 'parts' && (
-        <View style={styles.sections}>
-          <WebCard title="Ersatzteilliste">
-            {/* Header */}
-            <View style={[styles.partsHeaderRow, styles.partsTableRow]}>
-              <Text style={[styles.partsCell, styles.partsCellWide, styles.partsHeaderText]}>Bezeichnung</Text>
-              <Text style={[styles.partsCell, styles.partsCellMono, styles.partsHeaderText]}>Art.-Nr.</Text>
-              <Text style={[styles.partsCell, styles.partsCellSmall, styles.partsHeaderText]}>Menge</Text>
-              <Text style={[styles.partsCell, styles.partsCellSmall, styles.partsHeaderText]}>Lieferfrist</Text>
-            </View>
-            {machine.spareParts.map((p) => (
-              <View key={p.partNo} style={styles.partsTableRow}>
-                <Text style={[styles.partsCell, styles.partsCellWide, styles.partsName]}>{p.name}</Text>
-                <Text style={[styles.partsCell, styles.partsCellMono]}>{p.partNo}</Text>
-                <Text style={[styles.partsCell, styles.partsCellSmall, styles.partsCellCenter]}>×{p.qty}</Text>
-                <Text style={[styles.partsCell, styles.partsCellSmall, styles.partsCellCenter]}>{p.leadDays}d</Text>
-              </View>
-            ))}
-          </WebCard>
-        </View>
-      )}
-
-      {/* Wartung */}
-      {activeSection === 'maintenance' && (
-        <View style={styles.sections}>
-          <View style={styles.gridTwo}>
-            <WebCard title="Nächste Wartung">
-              <WebRow label="Termin" value={machine.maintenance.nextDate} />
-              <WebRow label="Intervall" value={`alle ${machine.maintenance.intervalDays} Tage`} />
-            </WebCard>
-            <WebCard title="Letzte Wartung">
-              <WebRow label="Datum" value={machine.maintenance.lastDate} />
-            </WebCard>
-          </View>
-
-          <WebCard title="Wartungshistorie">
-            {machine.maintenance.history.map((h, i) => (
-              <View key={i} style={[styles.histRow, i > 0 && styles.histRowBorder]}>
-                <View style={[styles.histBadge, { backgroundColor: h.type === 'Reparatur' ? '#fef3c7' : '#f0fdf4' }]}>
-                  <Text style={[styles.histBadgeText, { color: h.type === 'Reparatur' ? '#92400e' : '#15803d' }]}>
-                    {h.type}
-                  </Text>
-                </View>
-                <View style={styles.histRight}>
-                  <Text style={styles.histDate}>{h.date} · {h.tech}</Text>
-                  <Text style={styles.histNote}>{h.note}</Text>
-                </View>
-              </View>
-            ))}
-          </WebCard>
-        </View>
-      )}
+    <View style={dr.row}>
+      <Text style={dr.label}>{label}</Text>
+      <Text style={[dr.value, mono && dr.mono, accent && dr.accent]}>{value}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { gap: 12 },
-
-  // Web Tab Bar
-  tabBar: {
+const dr = StyleSheet.create({
+  row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F8',
+    gap: 8,
+  },
+  label: { fontSize: 12, color: COLORS.textMuted, flex: 1 },
+  value: { fontSize: 12, fontWeight: '600', color: COLORS.text, textAlign: 'right' as const, maxWidth: '62%' },
+  mono: { fontFamily: 'monospace', fontSize: 11 },
+  accent: { color: COLORS.primary },
+});
+
+function Panel({ title, children, action }: {
+  title: string; children: React.ReactNode; action?: { label: string; onPress: () => void };
+}) {
+  return (
+    <View style={panel.card}>
+      <View style={panel.header}>
+        <Text style={panel.title}>{title}</Text>
+        {action && (
+          <TouchableOpacity onPress={action.onPress} activeOpacity={0.7}>
+            <Text style={panel.action}>{action.label}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={panel.body}>{children}</View>
+    </View>
+  );
+}
+const panel = StyleSheet.create({
+  card: {
     backgroundColor: COLORS.bgCard,
-    borderRadius: 10,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',
   },
-  tab: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.bgCardAlt,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  title: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.9,
+  },
+  action: { fontSize: 11, color: COLORS.accent, fontWeight: '600' },
+  body: { padding: 14, gap: 0 },
+});
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+export function MachineCard({ machine, activeSection, onSectionChange }: Props) {
+  const sc = STATUS_CFG[machine.status];
+
+  return (
+    <View style={styles.root}>
+
+      {/* HMI-Style Tab Navigation */}
+      <View style={styles.navBar}>
+        {SECTIONS.map((s) => (
+          <TouchableOpacity
+            key={s.id}
+            style={[styles.navTab, activeSection === s.id && styles.navTabActive]}
+            onPress={() => onSectionChange(s.id)}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.navIcon, activeSection === s.id && styles.navIconActive]}>{s.icon}</Text>
+            <Text style={[styles.navLabel, activeSection === s.id && styles.navLabelActive]}>{s.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Source badge */}
+      <View style={styles.sourceBadge}>
+        <View style={styles.sourceDot} />
+        <Text style={styles.sourceBadgeText}>MachineCard.web.tsx</Text>
+      </View>
+
+      {/* ── ÜBERSICHT ─────────────────────────────────────────────────────── */}
+      {activeSection === 'overview' && (
+        <View style={styles.grid}>
+          {/* Status */}
+          <View style={[styles.statusBar, { backgroundColor: sc.bg, borderColor: sc.border }]}>
+            <View style={[styles.statusDot, { backgroundColor: sc.dot }]} />
+            <Text style={[styles.statusText, { color: sc.text }]}>Status: {sc.label}</Text>
+          </View>
+
+          <View style={styles.twoCol}>
+            <Panel title="Maschinendaten">
+              <DataRow label="Modell" value={machine.model} />
+              <DataRow label="Kategorie" value={machine.category} />
+              <DataRow label="Hersteller" value={machine.manufacturer} />
+              <DataRow label="Baujahr" value={String(machine.yearBuilt)} />
+            </Panel>
+            <Panel title="Installation">
+              <DataRow label="Standort" value={machine.location} />
+              <DataRow label="Seriennummer" value={machine.serialNo} mono accent />
+            </Panel>
+          </View>
+        </View>
+      )}
+
+      {/* ── DATENBLATT ───────────────────────────────────────────────────── */}
+      {activeSection === 'datasheet' && (
+        <View style={styles.grid}>
+          {/* PDF-Download */}
+          <TouchableOpacity style={styles.pdfRow} activeOpacity={0.85}>
+            <View style={styles.pdfIcon}><Text style={styles.pdfIconText}>PDF</Text></View>
+            <View style={styles.pdfMeta}>
+              <Text style={styles.pdfName}>{machine.datasheet.pdfLabel}</Text>
+              <Text style={styles.pdfSub}>Betriebsanleitung herunterladen</Text>
+            </View>
+            <Text style={styles.pdfArrow}>↗</Text>
+          </TouchableOpacity>
+
+          <View style={styles.twoCol}>
+            <Panel title="Elektrisch / Leistung">
+              <DataRow label="Nennleistung" value={machine.datasheet.power} />
+              <DataRow label="Versorgung" value={machine.datasheet.voltage} />
+              <DataRow label="Schutzart" value={machine.datasheet.ipClass} />
+              <DataRow label="Taktleistung" value={machine.datasheet.output} />
+            </Panel>
+            <Panel title="Mechanisch">
+              <DataRow label="Maschinengewicht" value={machine.datasheet.weight} />
+              <DataRow label="Abmessungen (L×B×H)" value={machine.datasheet.dimensions} />
+            </Panel>
+          </View>
+        </View>
+      )}
+
+      {/* ── ERSATZTEILE ──────────────────────────────────────────────────── */}
+      {activeSection === 'parts' && (
+        <View style={styles.grid}>
+          <Panel title={`Ersatzteilliste · ${machine.spareParts.length} Positionen`}>
+            {/* Table header */}
+            <View style={[pt.row, pt.headerRow]}>
+              <Text style={[pt.cell, pt.wide, pt.hdr]}>Bezeichnung</Text>
+              <Text style={[pt.cell, pt.artNo, pt.hdr]}>Artikel-Nr.</Text>
+              <Text style={[pt.cell, pt.small, pt.hdr, pt.center]}>Menge</Text>
+              <Text style={[pt.cell, pt.small, pt.hdr, pt.center]}>Frist</Text>
+            </View>
+            {machine.spareParts.map((p, i) => (
+              <View key={p.partNo} style={[pt.row, i % 2 === 1 && pt.rowAlt]}>
+                <Text style={[pt.cell, pt.wide, pt.name]}>{p.name}</Text>
+                <Text style={[pt.cell, pt.artNo, pt.mono]}>{p.partNo}</Text>
+                <Text style={[pt.cell, pt.small, pt.center, { color: COLORS.primary, fontWeight: '700' }]}>×{p.qty}</Text>
+                <Text style={[pt.cell, pt.small, pt.center, pt.muted]}>{p.leadDays}d</Text>
+              </View>
+            ))}
+          </Panel>
+        </View>
+      )}
+
+      {/* ── WARTUNG ──────────────────────────────────────────────────────── */}
+      {activeSection === 'maintenance' && (
+        <View style={styles.grid}>
+          <View style={styles.twoCol}>
+            <Panel title="Nächste Wartung">
+              <DataRow label="Termin" value={machine.maintenance.nextDate} accent={machine.status === 'warning'} />
+              <DataRow label="Letzter Service" value={machine.maintenance.lastDate} />
+              <DataRow label="Intervall" value={`alle ${machine.maintenance.intervalDays} Tage`} />
+            </Panel>
+            <Panel title="CustomCare Status">
+              <DataRow
+                label="Programm"
+                value="CustomCare Active"
+                accent
+              />
+              <DataRow label="Vertrag" value="Aktiv" />
+            </Panel>
+          </View>
+
+          <Panel title="Wartungshistorie">
+            {machine.maintenance.history.map((h, i) => (
+              <View key={i} style={[ht.row, i > 0 && ht.rowTop]}>
+                <View style={[ht.badge, h.type === 'Reparatur' && ht.badgeWarn]}>
+                  <Text style={[ht.badgeText, h.type === 'Reparatur' && ht.badgeTextWarn]}>{h.type}</Text>
+                </View>
+                <View style={ht.right}>
+                  <Text style={ht.meta}>{h.date} · {h.tech}</Text>
+                  <Text style={ht.note}>{h.note}</Text>
+                </View>
+              </View>
+            ))}
+          </Panel>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Parts table styles ───────────────────────────────────────────────────────
+const pt = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  rowAlt: { backgroundColor: '#F8FAFC' },
+  headerRow: {
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 8,
+    marginBottom: 2,
+  },
+  cell: { fontSize: 12, color: COLORS.text, paddingRight: 8 },
+  wide: { flex: 2 },
+  artNo: { flex: 1.4, fontFamily: 'monospace', fontSize: 11, color: COLORS.textMuted },
+  small: { width: 50 },
+  hdr: { fontSize: 10, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase' as const },
+  name: { fontWeight: '500' },
+  mono: {},
+  center: { textAlign: 'center' as const },
+  muted: { color: COLORS.textMuted },
+});
+
+// ─── History styles ───────────────────────────────────────────────────────────
+const ht = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 12, paddingVertical: 10, alignItems: 'flex-start' },
+  rowTop: { borderTopWidth: 1, borderTopColor: '#EEF3F8' },
+  badge: {
+    backgroundColor: COLORS.successBg,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    minWidth: 82,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  badgeWarn: { backgroundColor: COLORS.warningBg },
+  badgeText: { fontSize: 11, fontWeight: '700', color: COLORS.success },
+  badgeTextWarn: { color: COLORS.warning },
+  right: { flex: 1, gap: 3 },
+  meta: { fontSize: 11, color: COLORS.textHint, fontFamily: 'monospace' },
+  note: { fontSize: 12, color: COLORS.text, lineHeight: 17 },
+});
+
+// ─── Main styles ──────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  root: { gap: 12 },
+
+  // HMI navigation bar
+  navBar: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.bgDark,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  navTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -203,134 +305,70 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 10,
     borderRightWidth: 1,
-    borderRightColor: COLORS.border,
+    borderRightColor: COLORS.borderDark,
+    ...Platform.select({ web: { cursor: 'pointer' } as any }),
   },
-  tabActive: { backgroundColor: COLORS.primary },
-  tabIcon: { fontSize: 13 },
-  tabLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
-  tabLabelActive: { color: '#fff' },
+  navTabActive: { backgroundColor: COLORS.primary },
+  navIcon: { fontSize: 13, color: COLORS.textOnDarkMuted },
+  navIconActive: { color: '#fff' },
+  navLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textOnDarkMuted },
+  navLabelActive: { color: '#fff' },
 
-  // Platform badge
-  platformBadge: {
+  // Source badge
+  sourceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     alignSelf: 'center',
-    backgroundColor: '#eef2ff',
-    borderRadius: 6,
+    backgroundColor: '#EEF0FF',
+    borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  platformDot: { fontSize: 8, color: '#6366f1' },
-  platformBadgeText: { fontSize: 10, color: '#6366f1', fontFamily: 'monospace' },
+  sourceDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#6366F1' },
+  sourceBadgeText: { fontSize: 10, color: '#4F46E5', fontFamily: 'monospace' },
 
-  sections: { gap: 10 },
+  // Grid
+  grid: { gap: 10 },
+  twoCol: { flexDirection: 'row', gap: 10 },
 
-  // Status
-  statusBanner: {
+  // Status bar
+  statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderRadius: 8,
+    borderRadius: 5,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 8,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '600' },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusText: { fontSize: 12, fontWeight: '700' },
 
-  // Grid
-  gridTwo: {
-    flexDirection: 'row',
-    gap: 10,
-    ...Platform.select({ web: {} as any }),
-  },
-
-  // Web Cards
-  webCard: {
-    flex: 1,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-    padding: 12,
-    gap: 6,
-  },
-  webCardTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase' as any,
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  webRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    gap: 8,
-  },
-  webRowLabel: { fontSize: 12, color: COLORS.textMuted, flex: 1 },
-  webRowValue: { fontSize: 12, color: COLORS.text, fontWeight: '600', textAlign: 'right' as any, maxWidth: '60%' },
-  webRowValueMono: { fontFamily: 'monospace', fontSize: 11 },
-
-  // PDF button
-  pdfButton: {
+  // PDF download
+  pdfRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#eff6ff',
-    borderRadius: 10,
+    backgroundColor: '#EFF7FF',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#BFDBFE',
     paddingHorizontal: 14,
     paddingVertical: 12,
+    ...Platform.select({ web: { cursor: 'pointer' } as any }),
   },
-  pdfIcon: { fontSize: 24 },
-  pdfTextWrap: { flex: 1, gap: 2 },
-  pdfLabel: { fontSize: 13, color: '#1d4ed8', fontWeight: '600' },
-  pdfSub: { fontSize: 11, color: '#6b7280' },
-  pdfArrow: { fontSize: 16, color: '#3b82f6', fontWeight: '700' },
-
-  // Parts table
-  partsTableRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+  pdfIcon: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 4,
+    width: 34,
+    height: 34,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  partsHeaderRow: { borderBottomWidth: 2, borderBottomColor: COLORS.border },
-  partsHeaderText: { fontSize: 10, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase' as any },
-  partsCell: { fontSize: 12, color: COLORS.text },
-  partsCellWide: { flex: 2 },
-  partsCellMono: { flex: 1.5, fontFamily: 'monospace', fontSize: 11, color: COLORS.textMuted },
-  partsCellSmall: { width: 52, textAlign: 'center' as any },
-  partsCellCenter: { color: COLORS.textMuted },
-  partsName: { fontWeight: '500' },
-
-  // Maintenance history
-  histRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 10,
-    alignItems: 'flex-start',
-  },
-  histRowBorder: { borderTopWidth: 1, borderTopColor: '#f0f0f0' },
-  histBadge: {
-    borderRadius: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-    minWidth: 70,
-    alignItems: 'center',
-  },
-  histBadgeText: { fontSize: 11, fontWeight: '700' },
-  histRight: { flex: 1, gap: 2 },
-  histDate: { fontSize: 11, color: COLORS.textMuted, fontFamily: 'monospace' },
-  histNote: { fontSize: 12, color: COLORS.text, lineHeight: 17 },
+  pdfIconText: { fontSize: 10, fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  pdfMeta: { flex: 1, gap: 2 },
+  pdfName: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
+  pdfSub: { fontSize: 11, color: COLORS.textMuted },
+  pdfArrow: { fontSize: 18, fontWeight: '700', color: COLORS.accent },
 });

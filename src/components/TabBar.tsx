@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme';
 
@@ -8,12 +9,13 @@ export type TabId = 'auth' | 'machines';
 interface Tab {
   id: TabId;
   label: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconActive: keyof typeof Ionicons.glyphMap;
 }
 
 const TABS: Tab[] = [
-  { id: 'auth', label: 'Login', icon: '🔐' },
-  { id: 'machines', label: 'Maschinen', icon: '🏭' },
+  { id: 'auth',     label: 'Login',     icon: 'lock-closed-outline',    iconActive: 'lock-closed' },
+  { id: 'machines', label: 'Maschinen', icon: 'hardware-chip-outline',  iconActive: 'hardware-chip' },
 ];
 
 interface Props {
@@ -32,13 +34,17 @@ export function TabBar({ active, onChange }: Props) {
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[styles.tab, isActive && styles.tabActive]}
+              style={styles.tab}
               onPress={() => onChange(tab.id)}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
-              <Text style={styles.icon}>{tab.icon}</Text>
-              <Text style={[styles.label, isActive && styles.labelActive]}>{tab.label}</Text>
               {isActive && <View style={styles.indicator} />}
+              <Ionicons
+                name={isActive ? tab.iconActive : tab.icon}
+                size={22}
+                color={isActive ? COLORS.accent : COLORS.textHint}
+              />
+              <Text style={[styles.label, isActive && styles.labelActive]}>{tab.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -56,45 +62,32 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
       android: { elevation: 8 },
-      web: { boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' } as any,
+      web: { boxShadow: '0 -1px 0 #D0D9E8, 0 -4px 16px rgba(10,30,60,0.06)' } as any,
     }),
   },
-  bar: {
-    flexDirection: 'row',
-    height: 56,
-  },
+  bar: { flexDirection: 'row', height: 56 },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
     position: 'relative',
-  },
-  tabActive: {},
-  icon: {
-    fontSize: 18,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.textHint,
-  },
-  labelActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
+    ...Platform.select({ web: { cursor: 'pointer' } as any }),
   },
   indicator: {
     position: 'absolute',
     top: 0,
-    left: 16,
-    right: 16,
-    height: 2,
-    backgroundColor: COLORS.primary,
+    left: 20,
+    right: 20,
+    height: 2.5,
+    backgroundColor: COLORS.accent,
     borderBottomLeftRadius: 2,
     borderBottomRightRadius: 2,
   },
+  label: { fontSize: 11, fontWeight: '500', color: COLORS.textHint },
+  labelActive: { color: COLORS.accent, fontWeight: '700' },
 });

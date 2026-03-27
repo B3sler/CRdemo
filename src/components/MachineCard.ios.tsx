@@ -1,10 +1,11 @@
 /**
  * MachineCard.ios.tsx
- * iOS-native Darstellung: Grouped Table View Stil (wie iOS Einstellungen)
- * Wird von Metro automatisch auf iOS geladen.
+ * iOS-native Darstellung: Grouped Table View Stil (UIKit / SwiftUI)
+ * Multivac Blau als System-Tint. Metro lädt diese Datei automatisch auf iOS.
  */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Machine } from '../data/machines';
 import { COLORS } from '../theme';
 
@@ -15,34 +16,56 @@ interface Props {
 }
 
 const SECTIONS = [
-  { id: 'overview' as const, label: 'Übersicht' },
-  { id: 'datasheet' as const, label: 'Datenblatt' },
-  { id: 'parts' as const, label: 'Ersatzteile' },
-  { id: 'maintenance' as const, label: 'Wartung' },
+  { id: 'overview' as const,     label: 'Übersicht' },
+  { id: 'datasheet' as const,    label: 'Datenblatt' },
+  { id: 'parts' as const,        label: 'Ersatzteile' },
+  { id: 'maintenance' as const,  label: 'Wartung' },
 ];
 
-function IosRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+// iOS system-level colors (close to UIKit defaults with Multivac tint)
+const IOS = {
+  systemGray6:  '#F2F2F7',
+  systemGray5:  '#E5E5EA',
+  systemGray4:  '#D1D1D6',
+  systemGray3:  '#C7C7CC',
+  systemGray2:  '#AEAEB2',
+  systemGray:   '#8E8E93',
+  label:        '#000000',
+  secondaryLabel:'#3C3C43',
+  tertiaryLabel: '#3C3C4399',
+  separator:    '#C6C6C8',
+  groupedBg:    '#F2F2F7',
+  groupedCard:  '#FFFFFF',
+  tint:         '#2B5BE8',       // Interactive Blue als iOS System-Tint
+  destructive:  '#FF3B30',
+  statusGreen:  '#34C759',
+  statusYellow: '#FF9500',
+  statusRed:    '#FF3B30',
+};
+
+function Row({ label, value, last, tint }: { label: string; value: string; last?: boolean; tint?: boolean }) {
   return (
-    <View style={[styles.row, !last && styles.rowBorder]}>
+    <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+      <Text style={[styles.rowValue, tint && { color: IOS.tint }]} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
 
-function IosSection({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, footer, children }: { title: string; footer?: string; children: React.ReactNode }) {
   return (
-    <View style={styles.tableSection}>
-      <Text style={styles.tableSectionTitle}>{title.toUpperCase()}</Text>
-      <View style={styles.tableCard}>{children}</View>
+    <View style={styles.section}>
+      <Text style={styles.sectionHeader}>{title.toUpperCase()}</Text>
+      <View style={styles.sectionCard}>{children}</View>
+      {footer && <Text style={styles.sectionFooter}>{footer}</Text>}
     </View>
   );
 }
 
-const STATUS_COLORS = {
-  ok: { dot: '#34c759', text: '#1c7c32' },
-  warning: { dot: '#ff9500', text: '#7a4400' },
-  error: { dot: '#ff3b30', text: '#8b1a13' },
+const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> = {
+  ok:      { dot: IOS.statusGreen,  text: '#1C7C32', bg: '#E8F8EE' },
+  warning: { dot: IOS.statusYellow, text: '#7A4400', bg: '#FFF5E0' },
+  error:   { dot: IOS.statusRed,    text: '#8B1A13', bg: '#FFEEEE' },
 };
 
 export function MachineCard({ machine, activeSection, onSectionChange }: Props) {
@@ -53,15 +76,10 @@ export function MachineCard({ machine, activeSection, onSectionChange }: Props) 
 
       {/* iOS Segmented Control */}
       <View style={styles.segmented}>
-        {SECTIONS.map((s, i) => (
+        {SECTIONS.map((s) => (
           <TouchableOpacity
             key={s.id}
-            style={[
-              styles.segment,
-              activeSection === s.id && styles.segmentActive,
-              i === 0 && styles.segmentFirst,
-              i === SECTIONS.length - 1 && styles.segmentLast,
-            ]}
+            style={[styles.segment, activeSection === s.id && styles.segmentActive]}
             onPress={() => onSectionChange(s.id)}
             activeOpacity={0.7}
           >
@@ -72,103 +90,107 @@ export function MachineCard({ machine, activeSection, onSectionChange }: Props) 
         ))}
       </View>
 
-      {/* Platform badge */}
-      <View style={styles.platformBadge}>
-        <Text style={styles.platformBadgeText}>MachineCard.ios.tsx · iOS Grouped Table Stil</Text>
+      {/* Source badge */}
+      <View style={styles.sourceBadge}>
+        <Text style={styles.sourceBadgeText}>MachineCard.ios.tsx</Text>
       </View>
 
-      {/* Übersicht */}
+      {/* ÜBERSICHT */}
       {activeSection === 'overview' && (
         <View style={styles.sections}>
-          {/* Status-Banner */}
-          <View style={[styles.statusBanner, { backgroundColor: machine.status === 'ok' ? '#e8fae8' : machine.status === 'warning' ? '#fff8e1' : '#ffebee' }]}>
+          <View style={[styles.statusBanner, { backgroundColor: sc.bg }]}>
             <View style={[styles.statusDot, { backgroundColor: sc.dot }]} />
-            <Text style={[styles.statusText, { color: sc.text }]}>{machine.statusText}</Text>
+            <Text style={[styles.statusLabel, { color: sc.text }]}>{machine.statusText}</Text>
           </View>
 
-          <IosSection title="Gerät">
-            <IosRow label="Modell" value={machine.model} />
-            <IosRow label="Kategorie" value={machine.category} />
-            <IosRow label="Hersteller" value={machine.manufacturer} />
-            <IosRow label="Baujahr" value={String(machine.yearBuilt)} last />
-          </IosSection>
+          <Section title="Gerät">
+            <Row label="Modell" value={machine.model} />
+            <Row label="Kategorie" value={machine.category} />
+            <Row label="Hersteller" value={machine.manufacturer} />
+            <Row label="Baujahr" value={String(machine.yearBuilt)} last />
+          </Section>
 
-          <IosSection title="Standort">
-            <IosRow label="Ort" value={machine.location} last />
-          </IosSection>
+          <Section title="Standort" footer="Quelle: myMULTIVAC-Portal">
+            <Row label="Standort" value={machine.location} last />
+          </Section>
         </View>
       )}
 
-      {/* Datenblatt */}
+      {/* DATENBLATT */}
       {activeSection === 'datasheet' && (
         <View style={styles.sections}>
-          {/* PDF-Link-Zeile */}
-          <View style={styles.tableSection}>
-            <Text style={styles.tableSectionTitle}>DOKUMENT</Text>
-            <TouchableOpacity style={[styles.tableCard, styles.pdfRow]} activeOpacity={0.7}>
-              <Text style={styles.pdfIcon}>📄</Text>
-              <Text style={styles.pdfLabel}>{machine.datasheet.pdfLabel}</Text>
-              <Text style={styles.pdfChevron}>›</Text>
+          <Section title="Dokument">
+            <TouchableOpacity style={[styles.row, styles.fileRow]} activeOpacity={0.6}>
+              <Ionicons name="document-text-outline" size={22} color={IOS.tint} />
+              <Text style={styles.fileLabel}>{machine.datasheet.pdfLabel}</Text>
+              <Ionicons name="chevron-forward" size={18} color={IOS.systemGray3} />
             </TouchableOpacity>
-          </View>
+          </Section>
 
-          <IosSection title="Technische Daten">
-            <IosRow label="Leistung" value={machine.datasheet.power} />
-            <IosRow label="Ausstoß" value={machine.datasheet.output} />
-            <IosRow label="Gewicht" value={machine.datasheet.weight} />
-            <IosRow label="Abmessungen" value={machine.datasheet.dimensions} />
-            <IosRow label="Spannung" value={machine.datasheet.voltage} />
-            <IosRow label="Schutzklasse" value={machine.datasheet.ipClass} last />
-          </IosSection>
+          <Section title="Elektrisch / Leistung">
+            <Row label="Leistung" value={machine.datasheet.power} />
+            <Row label="Spannung" value={machine.datasheet.voltage} />
+            <Row label="Schutzklasse" value={machine.datasheet.ipClass} />
+            <Row label="Ausstoß" value={machine.datasheet.output} last />
+          </Section>
+
+          <Section title="Mechanisch">
+            <Row label="Gewicht" value={machine.datasheet.weight} />
+            <Row label="Abmessungen" value={machine.datasheet.dimensions} last />
+          </Section>
         </View>
       )}
 
-      {/* Ersatzteile */}
+      {/* ERSATZTEILE */}
       {activeSection === 'parts' && (
         <View style={styles.sections}>
-          <View style={styles.tableSection}>
-            <Text style={styles.tableSectionTitle}>ERSATZTEILLISTE</Text>
-            <View style={styles.tableCard}>
-              {machine.spareParts.map((p, i) => (
-                <View key={p.partNo} style={[styles.partRow, i < machine.spareParts.length - 1 && styles.rowBorder]}>
-                  <View style={styles.partLeft}>
-                    <Text style={styles.partName}>{p.name}</Text>
-                    <Text style={styles.partNo}>{p.partNo}</Text>
-                  </View>
-                  <View style={styles.partRight}>
-                    <Text style={styles.partQty}>×{p.qty}</Text>
-                    <Text style={styles.partLead}>{p.leadDays} Tage</Text>
-                  </View>
+          <Section title="Ersatzteilliste" footer={`${machine.spareParts.length} Positionen`}>
+            {machine.spareParts.map((p, i) => (
+              <View key={p.partNo} style={[styles.partRow, i < machine.spareParts.length - 1 && styles.rowDivider]}>
+                <View style={styles.partLeft}>
+                  <Text style={styles.partName}>{p.name}</Text>
+                  <Text style={styles.partNo}>{p.partNo}</Text>
                 </View>
-              ))}
-            </View>
-          </View>
+                <View style={styles.partRight}>
+                  <Text style={[styles.partQty, { color: IOS.tint }]}>×{p.qty}</Text>
+                  <Text style={styles.partLead}>{p.leadDays}d</Text>
+                </View>
+              </View>
+            ))}
+          </Section>
         </View>
       )}
 
-      {/* Wartung */}
+      {/* WARTUNG */}
       {activeSection === 'maintenance' && (
         <View style={styles.sections}>
-          <IosSection title="Intervall">
-            <IosRow label="Letzte Wartung" value={machine.maintenance.lastDate} />
-            <IosRow label="Nächste Wartung" value={machine.maintenance.nextDate} />
-            <IosRow label="Intervall" value={`alle ${machine.maintenance.intervalDays} Tage`} last />
-          </IosSection>
+          <Section title="Wartungsplan">
+            <Row label="Letzte Wartung" value={machine.maintenance.lastDate} />
+            <Row label="Nächste Wartung"
+              value={machine.maintenance.nextDate}
+              tint={machine.status === 'warning'}
+              last />
+          </Section>
 
-          <View style={styles.tableSection}>
-            <Text style={styles.tableSectionTitle}>HISTORIE</Text>
-            <View style={styles.tableCard}>
-              {machine.maintenance.history.map((h, i) => (
-                <View key={i} style={[styles.histRow, i < machine.maintenance.history.length - 1 && styles.rowBorder]}>
-                  <View style={styles.histLeft}>
-                    <Text style={styles.histDate}>{h.date}</Text>
-                    <Text style={styles.histType}>{h.type} · {h.tech}</Text>
-                    <Text style={styles.histNote}>{h.note}</Text>
-                  </View>
+          <Section title="Intervall">
+            <Row label="Zyklus" value={`alle ${machine.maintenance.intervalDays} Tage`} last />
+          </Section>
+
+          <Section title="Historie">
+            {machine.maintenance.history.map((h, i) => (
+              <View key={i} style={[styles.histRow, i < machine.maintenance.history.length - 1 && styles.rowDivider]}>
+                <View style={[styles.histTypeBadge, h.type === 'Reparatur' && styles.histTypeBadgeRed]}>
+                  <Text style={[styles.histTypeText, h.type === 'Reparatur' && styles.histTypeTextRed]}>
+                    {h.type}
+                  </Text>
                 </View>
-              ))}
-            </View>
-          </View>
+                <View style={styles.histBody}>
+                  <Text style={styles.histMeta}>{h.date} · {h.tech}</Text>
+                  <Text style={styles.histNote}>{h.note}</Text>
+                </View>
+              </View>
+            ))}
+          </Section>
         </View>
       )}
     </View>
@@ -178,46 +200,44 @@ export function MachineCard({ machine, activeSection, onSectionChange }: Props) 
 const styles = StyleSheet.create({
   root: { gap: 0 },
 
-  // iOS Segmented Control
+  // Segmented Control (iOS native look)
   segmented: {
     flexDirection: 'row',
-    backgroundColor: '#e5e5ea',
-    borderRadius: 9,
+    backgroundColor: IOS.systemGray5,
+    borderRadius: 10,
     padding: 2,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   segment: {
     flex: 1,
     paddingVertical: 7,
-    borderRadius: 7,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  segmentFirst: {},
-  segmentLast: {},
   segmentActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: IOS.groupedCard,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
+    shadowOpacity: 0.14,
+    shadowRadius: 2.5,
   },
-  segmentText: { fontSize: 11, fontWeight: '500', color: '#3a3a3c' },
-  segmentTextActive: { fontWeight: '700', color: '#1c1c1e' },
+  segmentText: { fontSize: 11, fontWeight: '500', color: IOS.label },
+  segmentTextActive: { fontWeight: '700', color: IOS.label },
 
-  // Platform badge
-  platformBadge: {
-    backgroundColor: '#f2f2f7',
+  // Source badge
+  sourceBadge: {
+    alignSelf: 'center',
+    backgroundColor: IOS.systemGray6,
     borderRadius: 6,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 16,
-    alignSelf: 'center',
+    paddingVertical: 4,
+    marginBottom: 14,
   },
-  platformBadgeText: { fontSize: 10, color: '#636366', fontFamily: 'Menlo' },
+  sourceBadgeText: { fontSize: 10, color: IOS.systemGray, fontFamily: 'Menlo' },
 
-  sections: { gap: 6 },
+  sections: { gap: 0 },
 
-  // Status
+  // Status banner
   statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,64 +245,87 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    marginBottom: 4,
+    marginBottom: 12,
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '600' },
+  statusLabel: { fontSize: 13, fontWeight: '600' },
 
-  // iOS grouped table
-  tableSection: { gap: 5 },
-  tableSectionTitle: {
-    fontSize: 11,
+  // Grouped section
+  section: { marginBottom: 18 },
+  sectionHeader: {
+    fontSize: 12,
     fontWeight: '400',
-    color: '#6c6c70',
-    letterSpacing: 0.5,
+    color: IOS.systemGray,
+    letterSpacing: 0.3,
+    marginBottom: 6,
     marginLeft: 16,
   },
-  tableCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
+  sectionFooter: {
+    fontSize: 12,
+    color: IOS.systemGray,
+    marginTop: 6,
+    marginLeft: 16,
+  },
+  sectionCard: {
+    backgroundColor: IOS.groupedCard,
+    borderRadius: 12,
     overflow: 'hidden',
   },
+
+  // Table row
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
     minHeight: 44,
   },
-  rowBorder: {
+  rowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#c6c6c8',
+    borderBottomColor: IOS.separator,
   },
-  rowLabel: { flex: 1, fontSize: 13, color: '#1c1c1e' },
-  rowValue: { fontSize: 13, color: '#636366', maxWidth: '55%', textAlign: 'right' },
+  rowLabel: { flex: 1, fontSize: 15, color: IOS.label },
+  rowValue: { fontSize: 15, color: IOS.systemGray, maxWidth: '55%', textAlign: 'right' },
 
-  // PDF row
-  pdfRow: {
+  // File row
+  fileRow: { gap: 10, paddingVertical: 14 },
+  fileLabel: { flex: 1, fontSize: 15, color: IOS.tint },
+
+  // Parts
+  partRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
+    paddingVertical: 11,
   },
-  pdfIcon: { fontSize: 22 },
-  pdfLabel: { flex: 1, fontSize: 13, color: '#007aff', fontWeight: '500' },
-  pdfChevron: { fontSize: 18, color: '#c7c7cc', fontWeight: '300' },
-
-  // Parts
-  partRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
-  partLeft: { flex: 1, gap: 2 },
-  partName: { fontSize: 13, color: '#1c1c1e', fontWeight: '500' },
-  partNo: { fontSize: 11, color: '#636366', fontFamily: 'Menlo' },
+  partLeft: { flex: 1, gap: 3 },
+  partName: { fontSize: 14, color: IOS.label, fontWeight: '500' },
+  partNo: { fontSize: 11, color: IOS.systemGray, fontFamily: 'Menlo' },
   partRight: { alignItems: 'flex-end', gap: 2 },
-  partQty: { fontSize: 13, color: '#1c1c1e', fontWeight: '600' },
-  partLead: { fontSize: 11, color: '#8e8e93' },
+  partQty: { fontSize: 15, fontWeight: '700' },
+  partLead: { fontSize: 12, color: IOS.systemGray },
 
   // Maintenance history
-  histRow: { paddingHorizontal: 16, paddingVertical: 10 },
-  histLeft: { gap: 2 },
-  histDate: { fontSize: 12, color: '#636366', fontFamily: 'Menlo' },
-  histType: { fontSize: 13, color: '#1c1c1e', fontWeight: '600' },
-  histNote: { fontSize: 12, color: '#636366', lineHeight: 17 },
+  histRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'flex-start',
+  },
+  histTypeBadge: {
+    backgroundColor: '#E8F8EE',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  histTypeBadgeRed: { backgroundColor: '#FFEEEE' },
+  histTypeText: { fontSize: 11, fontWeight: '700', color: '#1C7C32' },
+  histTypeTextRed: { color: IOS.destructive },
+  histBody: { flex: 1, gap: 3 },
+  histMeta: { fontSize: 12, color: IOS.systemGray, fontFamily: 'Menlo' },
+  histNote: { fontSize: 13, color: IOS.secondaryLabel, lineHeight: 18 },
 });

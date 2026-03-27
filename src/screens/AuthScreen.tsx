@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ScrollView, View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useChallenge } from '../hooks/useChallenge';
 import { computeHmacHex, computeCode, decodeVersion, generateSerialNumber, Version } from '../utils/hmac';
@@ -15,14 +16,12 @@ export function AuthScreen() {
 
   const [version, setVersion] = useState<Version>(1);
   const { challenge, timeLeft, newChallenge } = useChallenge(version);
-
   const [serialNumber] = useState<string>(generateSerialNumber);
 
   const [secret, setSecret] = useState(DEFAULT_SECRET);
   const [enteredChallenge, setEnteredChallenge] = useState('');
   const [enteredSerial, setEnteredSerial] = useState('');
   const [qrScanned, setQrScanned] = useState(false);
-
   const [responseInput, setResponseInput] = useState('');
   const [authStatus, setAuthStatus] = useState<AuthStatus>('idle');
 
@@ -43,9 +42,7 @@ export function AuthScreen() {
     setEnteredSerial(payload.s);
     setEnteredChallenge(payload.c);
     setQrScanned(true);
-    if (payload.v !== versionRef.current) {
-      setVersion(payload.v);
-    }
+    if (payload.v !== versionRef.current) setVersion(payload.v);
   }
 
   function handleVersionChange(v: Version) {
@@ -71,16 +68,20 @@ export function AuthScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.inner}>
+      <View style={[styles.inner, isWide && styles.innerWide]}>
 
-        {/* Protokoll-Erklärung */}
-        <View style={styles.protocolBanner}>
-          <Text style={styles.protocolBannerText}>
-            <Text style={styles.bold}>Ablauf: </Text>
-            Die Maschine zeigt ihre Seriennummer und eine zufällige Challenge ①. Der Techniker
-            gibt beides in seine App ein – erst dann wird der maschinenspezifische Response-Code
-            berechnet ②. Diesen Code gibt er am Terminal ein ③.
-          </Text>
+        {/* Header – same visual language as MachineScreen */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerEyebrow}>MULTIVAC Service</Text>
+            <Text style={styles.headerTitle}>Challenge-Response</Text>
+            <Text style={styles.headerSub}>
+              HMAC-SHA256 · 3-Schritt-Protokoll · Offline-Authentifizierung
+            </Text>
+          </View>
+          <View style={styles.headerIcon}>
+            <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.textOnDarkMuted} />
+          </View>
         </View>
 
         {/* 3-Schritt-Fluss */}
@@ -119,10 +120,7 @@ export function AuthScreen() {
 
           <VerifyPanel
             responseInput={responseInput}
-            onResponseChange={(v) => {
-              setResponseInput(v);
-              setAuthStatus('idle');
-            }}
+            onResponseChange={(v) => { setResponseInput(v); setAuthStatus('idle'); }}
             authStatus={authStatus}
             onVerify={handleVerify}
             challenge={challenge}
@@ -140,15 +138,35 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   content: { flexGrow: 1, alignItems: 'center', paddingVertical: 24, paddingHorizontal: 12 },
   inner: { width: '100%', maxWidth: 1400, gap: 16 },
-  protocolBanner: {
-    backgroundColor: COLORS.bgCardAlt,
-    borderRadius: 12,
-    padding: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
+  innerWide: {},
+
+  // Header – mirrors MachineScreen header
+  header: {
+    backgroundColor: COLORS.bgDark,
+    borderRadius: 10,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  protocolBannerText: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
-  bold: { fontWeight: '700', color: COLORS.text },
+  headerLeft: { flex: 1, gap: 4 },
+  headerEyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.accent,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.5,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.3 },
+  headerSub: { fontSize: 12, color: COLORS.textOnDarkMuted, lineHeight: 18, marginTop: 2 },
+  headerIcon: {
+    width: 44, height: 44,
+    backgroundColor: COLORS.bgDarkAlt,
+    borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
   flow: { flexDirection: 'column', gap: 8 },
   flowWide: { flexDirection: 'row', alignItems: 'flex-start' },
 });
