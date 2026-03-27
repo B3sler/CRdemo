@@ -1,55 +1,26 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, StatusBar, Platform } from 'react-native';
-import { GluestackUIProvider } from '@gluestack-ui/themed';
-import { config } from '@gluestack-ui/config';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppHeader } from './src/components/AppHeader';
 import { TabBar, TabId } from './src/components/TabBar';
-import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
-import { PlatformScreen } from './src/screens/PlatformScreen';
-import { GluestackScreen } from './src/screens/GluestackScreen';
+import { MachineScreen } from './src/screens/MachineScreen';
 import { COLORS } from './src/theme';
 
-const HEADER_TITLES: Record<TabId, { title: string; subtitle: string }> = {
-  welcome: {
-    title: 'React Native & Expo',
-    subtitle: 'Eine Codebasis · iOS · Android · Web',
-  },
-  auth: {
-    title: 'Demo',
-    subtitle: '3-Schritt-Protokoll · HMAC-SHA256',
-  },
-  platform: {
-    title: 'Plattformaspezifische Dateien',
-    subtitle: '.ios.tsx · .web.tsx · Metro Bundler',
-  },
-  gluestack: {
-    title: 'Gluestack UI',
-    subtitle: 'Universal Design System · React Native + Web',
-  },
-};
-
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('welcome');
-  const { title, subtitle } = HEADER_TITLES[activeTab];
+  const [activeTab, setActiveTab] = useState<TabId>('auth');
 
   return (
-    <GluestackUIProvider config={config} colorMode="light">
+    <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bgCard} />
-      <View style={styles.root}>
-        <AppHeader title={title} subtitle={subtitle} />
-
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.screen}>
-          {activeTab === 'welcome' && <WelcomeScreen onNavigate={setActiveTab} />}
           {activeTab === 'auth' && <AuthScreen />}
-          {activeTab === 'platform' && <PlatformScreen />}
-          {activeTab === 'gluestack' && <GluestackScreen />}
+          {activeTab === 'machines' && <MachineScreen />}
         </View>
-
         <TabBar active={activeTab} onChange={setActiveTab} />
-      </View>
-    </GluestackUIProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

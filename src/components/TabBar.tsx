@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme';
 
-export type TabId = 'welcome' | 'auth' | 'platform' | 'gluestack';
+export type TabId = 'auth' | 'machines';
 
 interface Tab {
   id: TabId;
@@ -11,10 +12,8 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'welcome', label: 'Einführung', icon: '📖' },
-  { id: 'auth', label: 'Demo', icon: '🔐' },
-  { id: 'platform', label: 'Plattform', icon: '📂' },
-  { id: 'gluestack', label: 'Gluestack', icon: '🧩' },
+  { id: 'auth', label: 'Login', icon: '🔐' },
+  { id: 'machines', label: 'Maschinen', icon: '🏭' },
 ];
 
 interface Props {
@@ -23,8 +22,10 @@ interface Props {
 }
 
 export function TabBar({ active, onChange }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.bar}>
         {TABS.map((tab) => {
           const isActive = tab.id === active;
@@ -53,7 +54,6 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
     ...Platform.select({
       ios: {
-        paddingBottom: 28, // safe area
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.06,
